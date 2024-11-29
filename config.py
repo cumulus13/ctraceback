@@ -5,8 +5,8 @@ from pydebugger.debug import debug
 import os
 
 class CONFIG:
-    _config_file = Path.cwd() / 'traceback.json' or Path(__file__).parent / "traceback.json"
-    _config_ini_file = str(Path.cwd() / 'traceback.ini' or  Path(__file__).parent / "traceback.ini")
+    _config_file = Path.cwd() / 'traceback.json' if (Path.cwd() / 'traceback.json').is_file() else '' or Path(__file__).parent / "traceback.json"
+    _config_ini_file = str(Path.cwd() / 'traceback.ini') if (Path.cwd() / 'traceback.ini').is_file() else "" or str(Path(__file__).parent / "traceback.ini")
     config = configset(_config_ini_file)
 
     _data = {
