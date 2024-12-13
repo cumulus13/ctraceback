@@ -128,7 +128,10 @@ def set():
         config.SLEEP or config._data_default.get('SLEEP') or 7
     )
     unset_window_always_on_top(active_terminal)
-    win32gui.SetForegroundWindow(active_window)  # Bring to foreground
+    try:
+        win32gui.SetForegroundWindow(active_window)  # Bring to foreground
+    except:
+        pass
     
     # sys.exit()
     # Find Windows Terminal window

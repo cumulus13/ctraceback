@@ -70,10 +70,15 @@ class CTraceback:
             # Serialize the exception data
             serialized_data = pickle.dumps((exc_type.__name__, str(exc_value), tb_details))
 
-            # Send the data to the server
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
-                client.connect((self.config.TRACEBACK_SERVER, self.config.TRACEBACK_PORT))
-                client.sendall(serialized_data)
+            try:
+                # Send the data to the server
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
+                    client.connect((self.config.TRACEBACK_SERVER, self.config.TRACEBACK_PORT))
+                    client.sendall(serialized_data)
+            except ConnectionRefusedError:
+                pass
+            except:
+                console.log(traceback.format_exc())
 
     @classmethod
     def usage(self):
