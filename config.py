@@ -22,7 +22,7 @@ class CONFIG:
         # Configure traceback logging
         'LOG_FILE' : config.get_config('file', 'name') or os.path.join(str(Path(__file__).parent), "traceback.log"),
         'ACCEPTS' : config.get_config_as_list('on_top', 'accepts') or ['WindowsTerminal.exe', 'cmd.exe', 'python.exe'],
-        'ON_TOP' : int(config.get_config('on_top', 'active')) if config.get_config('on_top', 'active') else '' or 1,
+        'ON_TOP' : int(config.get_config('on_top', 'active')) if config.get_config('on_top', 'active') else '' or 0,
         'SLEEP' : int(config.get_config('on_top', 'sleep')) if config.get_config('on_top', 'sleep') else '' or 7,
     }
 
