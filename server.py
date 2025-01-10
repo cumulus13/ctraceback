@@ -13,10 +13,11 @@ try:
 except:
     from config import CONFIG
 
-try:
-    from . import on_top
-except:
-    import on_top
+if sys.platform == 'win32':
+    try:
+        from . import on_top
+    except:
+        import on_top
 
 config = CONFIG()
 
@@ -71,11 +72,9 @@ def start_server(host = None, port = None):
                     data = b""
                     while True:
                         packet = conn.recv(4096)
-                        if not packet:
-                            break
+                        if not packet: break
                         data += packet
-                        if config.ON_TOP == 1:
-                            on_top.set()
+                        if config.ON_TOP == 1 and sys.platform == 'win32': on_top.set()
 
                     # Deserialize data
                     exc_type, exc_value, tb_details = pickle.loads(data)
