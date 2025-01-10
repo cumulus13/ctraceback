@@ -21,11 +21,13 @@ install_requires = [
     'psutil',
 ]
 
-sys_os = "Operation System :: Microsoft :: Windows"
-
-if not sys.platform == 'win32': sys_os = "Operating System :: POSIX :: Linux"
+if sys.platform == 'win32':
+    sys_os = "Operating System :: Microsoft :: Windows"
+else:
+    sys_os = "Operating System :: POSIX :: Linux"
 
 print("install_requires:", install_requires)
+print("requires os     :", sys_os)
 setup(
     name="ctraceback",
     version=version,
