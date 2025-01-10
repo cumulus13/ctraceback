@@ -10,24 +10,21 @@ with open("__version__.py") as fp:
     exec(fp.read(), version)
 version = version['version']
 
-if sys.platform == 'win32':
-    install_requires = [
-        'pygetwindow',
-        'argparse',
-        'configset', 
-        'rich',
-        'pydebugger',
-        'ctype',
-        'pywin32',  
-        'psutil'
-    ]
-else:
-    install_requires = [
-        'argparse',
-        'configset', 
-        'rich',
-        'pydebugger',
-    ]
+install_requires = [
+    'pygetwindow; platform_system=="Windows"',
+    'argparse',
+    'configset', 
+    'rich',
+    'pydebugger',
+    'ctype; platform_system=="Windows"',
+    'pywin32; platform_system=="Windows"',  
+    'psutil',
+]
+
+sys_os = "Operation System :: Microsoft :: Windows"
+
+if not sys.platform == 'win32': sys_os = "Operating System :: POSIX :: Linux"
+
 print("install_requires:", install_requires)
 setup(
     name="ctraceback",
@@ -60,7 +57,7 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         'License :: OSI Approved :: GNU General Public License (GPL)', 
-        "Operating System :: OS Independent",
+        sys_os,
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
     ],
