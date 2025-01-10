@@ -28,7 +28,7 @@ else:
         'rich',
         'pydebugger',
     ]
-
+print("install_requires:", install_requires)
 setup(
     name="ctraceback",
     version=version,
