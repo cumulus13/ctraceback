@@ -73,7 +73,7 @@ class CTraceback:
             try:
                 # Send the data to the server
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
-                    client.connect((self.config.TRACEBACK_SERVER, self.config.TRACEBACK_PORT))
+                    client.connect((self.config.TRACEBACK_SERVER, int(self.config.TRACEBACK_PORT)))
                     client.sendall(serialized_data)
             except ConnectionRefusedError:
                 pass
