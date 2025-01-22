@@ -44,21 +44,31 @@ def build():
         else:
             os.system('rm -rf build dist ctraceback.egg-info')
 
-        os.system('python setup.py build sdist bdist_wheel')
-        for i in os.listdir('dist'):
-            console.print(f'[bold #FFAAFF]-->[/] [bold #00FFFF]{i}[/] [bold #FFFF00]({os.path.realpath(i)})[/]')
+    os.system('python setup.py build sdist bdist_wheel')
+    for i in os.listdir('dist'):
+        console.print(f'[bold #FFAAFF]-->[/] [bold #00FFFF]{i}[/] [bold #FFFF00]({os.path.realpath(i)})[/]')
+            
+def upload():
+    if str(Path(__file__).parent / 'setup/ctraceback') not in str(Path.cwd()):
+        os.chdir(str(Path(__file__).parent / 'setup/ctraceback'))
+    if (Path(__file__).parent / 'setup/ctraceback/dist').is_dir():
+        os.system('twine upload dist/*')
+    else:
+        console.print(f"[error]{str(Path(__file__).parent / 'setup/ctraceback/dist')} not a directory !, please run build before ![/]")
         
 def usage():  # sourcery skip: merge-duplicate-blocks, remove-redundant-if
     parser = argparse.ArgumentParser()
-    parser.add_argument('COMMAND', help = 'valid: "build", "install"')
+    parser.add_argument('COMMAND', help = 'valid: "build", "install", "upload"')
     if len(sys.argv) == 1:
         _extracted_from_usage_5(parser)
     else:
         args = parser.parse_args()
         if args.COMMAND == 'install':
-            install()
+            install(True)
         elif args.COMMAND == 'build':
             build()
+        elif args.COMMAND == 'upload':
+            upload()
         else:
             _extracted_from_usage_5(parser)
 

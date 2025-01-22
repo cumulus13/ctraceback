@@ -7,45 +7,33 @@ import traceback
 import shutil
 import pickle
 import argparse
+from pathlib import Path
+import importlib
 
 from rich.console import Console
 from rich.traceback import Traceback #, Trace
 from rich.theme import Theme
 
-severity_theme = Theme({
-    "emergency": "#FFFFFF on #ff00ff",
-    "emerg": "#FFFFFF on #ff00ff",
-    "alert": "white on #005500",
-    "ale": "white on #005500",
-    "aler": "white on #005500",
-    'critical': "white on #0000FF",
-    'criti': "white on #0000FF",
-    'crit': "white on #0000FF",
-    "error": "white on red",
-    "err": "white on red",
-    "warning": "black on #FFFF00",
-    "warni": "black on #FFFF00",
-    "warn": "black on #FFFF00",
-    'notice': "black on #55FFFF",
-    'notic': "black on #55FFFF",
-    'noti': "black on #55FFFF",
-    "info": "bold #AAFF00",
-    "debug": "black on #FFAA00",
-    "deb": "black on #FFAA00",
-    "unknown": "white on #FF00FF"
-})
-
-console = Console(theme = severity_theme)
-
 try:
     from . config import CONFIG
 except:
     from config import CONFIG
+
+console = Console(theme = CONFIG().severity_theme)
+
+spec_handler_rabbitmq = importlib.util.spec_from_file_location("rabbitmq", str(Path(__file__).parent / 'handler' / 'rabbitmq.py'))
+rabbitmq = importlib.util.module_from_spec(spec_handler_rabbitmq)
+spec_handler_rabbitmq.loader.exec_module(rabbitmq)
+
+# try:
+#     from . config import CONFIG
+# except:
+#     from config import CONFIG
     
-try:
-    from . handler import rabbitmq
-except Exception:
-    from handler import rabbitmq
+# try:
+#     from . handler import rabbitmq
+# except Exception:
+#     from handler import rabbitmq
 
 if sys.version_info.major == 3:
     from urllib.parse import quote_plus
@@ -147,6 +135,7 @@ class CTraceback:
                 return False 
  
     def traceback(self, exc_type, exc_value, tb):
+        # sourcery skip: boolean-if-exp-identity, remove-unnecessary-cast
         # Generate plain-text traceback once
         plain_traceback = ''.join(traceback.format_exception(exc_type, exc_value, tb))
 
@@ -198,11 +187,25 @@ class CTraceback:
         server_subparser = parser.add_subparsers(dest = "runas", help = "Server arguments")
         
         serve_args = server_subparser.add_parser('serve', help = "Run as server")
-        serve_args.add_argument('-b', '--host', default = "127.0.0.1", type=str, help = 'listen on ip/host')
-        serve_args.add_argument('-p', '--port', default = 7000, type = int, help = "listen on port number (TCP)")
-        serve_args.add_argument('-ha', '--handler', help = 'valid arguments: "socket", "rabbit[mq]", default = "socket"')
+        serve_args.add_argument('-H', '--host', default = "127.0.0.1", type=str, help = 'listen on ip/host')
+        serve_args.add_argument('-P', '--port', default = 7000, type = int, help = "listen on port number (TCP)")
+        serve_args.add_argument('-ha', '--handler', help = 'valid arguments: "socket", "rabbit[mq]", default = "socket"', nargs='*')
+        serve_args.add_argument('-q', '--queue', help = 'Queue Name', action = 'store')
+        serve_args.add_argument('-x', '--exchange-name', help = 'Exchange Name', action = 'store')
+        serve_args.add_argument('-t', '--exchange-type', help = 'Exchange Type', action = 'store')
+        serve_args.add_argument('-k', '--routing-key', help = 'Routing Key', action = 'store')
+        serve_args.add_argument('-T', '--tag', help = 'Tag', action = 'store')
+        serve_args.add_argument('-u', '--username', help = 'Queue Authentication Username', action = 'store')
+        serve_args.add_argument('-p', '--password', help = 'Queue Authentication Password', action = 'store')
+        serve_args.add_argument('-d', '--durable', help = 'Queue Durable Mode', action = 'store_true')
+        serve_args.add_argument('-a', '--ack', help = 'Queue Ack Mode', action = 'store_true')
+        serve_args.add_argument('-l', '--last', help = 'Queue with Last N', action = 'store_true')
+        serve_args.add_argument('-ln', '--last-number', help = 'N for last', action = 'store')
+        serve_args.add_argument('-rh', '--rabbit-host', help = 'RabbitMQ Hostname if run with multiple handler, default is "127.0.0.1"', action = 'store')
+        serve_args.add_argument('-rp', '--rabbit-port', help = 'RabbitMQ Port if run with multiple handler, default is 5672', action = 'store')
 
         parser.add_argument('-t', '--test', action='store_true', help = "Test exception")
+        parser.add_argument('-v', '--verbose', help = 'Verbosity', action = 'store_true')
 
         args = parser.parse_args()
 
@@ -224,7 +227,8 @@ class CTraceback:
                         from . import server
                     except Exception:
                         import server
-                    server.start_server(args.host, args.port, args.handler)
+                    # def start_server(host = None, port = None, handle = 'socket', exchange_name = None, exchange_type = None, queue_name = None, routing_key = None, username = None, password = None, durable = False, ack = False, last = None, last_number = None, rabbitmq_host = None, rabbitmq_port = None, verbose = False):
+                    server.start_server(args.host, args.port, args.handler, args.exchange_name, args.exchange_type, args.queue_name, args.routing_key, args.username, args.password, args.durable, args.ack, args.last, args.last_number, args.rabbit_host, args.rabbit_port, args.verbose) 
                 else:
                     parser.print_help()
             else:
