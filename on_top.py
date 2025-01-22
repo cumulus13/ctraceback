@@ -113,6 +113,7 @@ def get_parent_window_handle():
     return hwnd_list[0] if hwnd_list else None
 
 def set():
+    print("RUN ON TOP ! [1]")
     active_window = get_active_window()
     # print(f"active_window: {active_window}")
     title = get_window_title(active_window)

@@ -19,6 +19,10 @@ install_requires = [
     'ctype; platform_system=="Windows"',
     'pywin32; platform_system=="Windows"',  
     'psutil',
+    'pika',
+    'tenacity',
+    'amqp',
+    'kombu'
 ]
 
 if sys.platform == 'win32':
@@ -51,7 +55,7 @@ setup(
             "ctraceback = ctraceback.__main__:usage",
         ]
     },
-    data_files=['__version__.py', 'README.md', 'LICENSE.rst'],
+    data_files=['__version__.py', 'README.md', 'LICENSE.rst', 'ctraceback/traceback.json', 'ctraceback/traceback.ini'],
     license_files=["LICENSE.rst"],    
     include_package_data=True,
     python_requires=">=3",
