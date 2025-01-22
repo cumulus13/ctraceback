@@ -69,7 +69,7 @@ def call_back_rabbitmq(ch, met, prop, body):
 def start_server(host = None, port = None, handle = 'socket'):
     if not handle or handle == 'socket':
         global server_socket
-        
+
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
                 console.print(f"[bold #FFAA00]Server is listening on[/] [bold #00FFFF]{host or HOST}[/]:[bold #FF55FF]{port or PORT}[/]")
@@ -77,7 +77,7 @@ def start_server(host = None, port = None, handle = 'socket'):
                 server_socket = server
                 server.bind((host or HOST, int(port or PORT)))
                 server.listen()
-                
+
                 while True:
                     conn, addr = server.accept()
                     with conn:
@@ -89,7 +89,9 @@ def start_server(host = None, port = None, handle = 'socket'):
                             packet = conn.recv(4096)
                             if not packet: break
                             data += packet
-                            if config.ON_TOP == 1 and sys.platform == 'win32': on_top.set()
+                            if config.ON_TOP == 1 and sys.platform == 'win32':
+                                print("RUN ON TOP ! [1]")
+                                on_top.set()
 
                         # Deserialize data
                         exc_type, exc_value, tb_details = pickle.loads(data)
@@ -99,21 +101,26 @@ def start_server(host = None, port = None, handle = 'socket'):
         except KeyboardInterrupt:
             server_socket.close()
             sys.exit()
+            
     elif handle in ['rabbit', 'rabbitmq']:
-        if not config.USE_RABBITMQ in [1, True, "1"]:
+        if config.USE_RABBITMQ not in [1, True, "1"]:
             console.print(f"[error]Handle with 'RabbitMQ' but not activated, please active before in config file '{config._config_file}' or see documentation 'README.md' ![/]")
-            exit()        
+            exit()
         try:
             from . handler import rabbitmq
         except Exception:
             from handler import rabbitmq
-        console.print(f"[notice]Run with[/] [error]RabbitMQ \[{handle}][/] [notice]handler ![/] [warning]{config.RABBITMQ_HOST}[/]:[debug]{config.RABBITMQ_PORT}[/]/[critical]{config.RABBITMQ_EXCHANGE_NAME or 'ctraceback'}[/]")            
+            
+        console.print(f"[notice]Run with[/] [error]RabbitMQ \[{handle}][/] [notice]handler ![/] [warning]{config.RABBITMQ_HOST}[/]:[debug]{config.RABBITMQ_PORT}[/]/[critical]{config.RABBITMQ_EXCHANGE_NAME or 'ctraceback'}[/]")
         while 1:
             try:
                 handler = rabbitmq.RabbitMQHandler().consume(call_back_rabbitmq, verbose = config.VERBOSE)
             except Exception:
                 console.print("[error] connection error, re-connection ...[/]")
                 time.sleep(int(config.SLEEP) if config.SLEEP else 1)
+    else:
+        console.print(f"[error]there is not handle support for '{handle}' ![/]")
+        os.kill(os.getpid(), signal.SIGTERM)
 
 def handle_exit_signal(signum, frame):
     """Handle termination signals."""
