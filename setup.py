@@ -35,6 +35,8 @@ def install(quite = False):  # sourcery skip: remove-redundant-fstring
         os.system('pip install -U .')
 
 def build():
+    copy(r'__version__.py', r'setup\ctraceback')
+    copy(r'__version__.py', r'setup\ctraceback\ctraceback')
     if str(Path(__file__).parent / 'setup/ctraceback') not in str(Path.cwd()):
         os.chdir(str(Path(__file__).parent / 'setup/ctraceback'))
         if sys.platform == 'win32':
@@ -58,17 +60,19 @@ def upload():
         
 def usage():  # sourcery skip: merge-duplicate-blocks, remove-redundant-if
     parser = argparse.ArgumentParser()
-    parser.add_argument('COMMAND', help = 'valid: "build", "install", "upload"')
+    parser.add_argument('COMMAND', help = 'valid: "build", "install", "upload"', nargs='*')
     if len(sys.argv) == 1:
         _extracted_from_usage_5(parser)
     else:
         args = parser.parse_args()
-        if args.COMMAND == 'install':
-            install(True)
-        elif args.COMMAND == 'build':
-            build()
-        elif args.COMMAND == 'upload':
-            upload()
+        if args.COMMAND:
+            for command in args.COMMAND:
+                if command == 'install':
+                    install(True)
+                elif command == 'build':
+                    build()
+                elif command == 'upload':
+                    upload()
         else:
             _extracted_from_usage_5(parser)
 
