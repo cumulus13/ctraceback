@@ -1,10 +1,12 @@
 from __future__ import absolute_import, unicode_literals
+import contextlib
 import sys
-from ctraceback import CTraceback
 from configset import configset
 from pathlib import Path
 from rich.text import Text
-
+from rich import traceback as rich_traceback
+import shutil
+rich_traceback.install(width=shutil.get_terminal_size()[0], theme='fruity')
 import json
 import pika
 import tenacity
@@ -18,13 +20,27 @@ from kombu import Connection, Exchange, Queue
 import logging
 from datetime import datetime
 from make_colors import make_colors
-sys.path.append(str(Path(__file__).parent.parent))
-import shutil
+import importlib
 
-try:
-    from . config import CONFIG
-except:
-    from config import CONFIG
+# try:
+#     from . config import CONFIG
+# except:
+#     from config import CONFIG
+
+spec_config = importlib.util.spec_from_file_location("config", str(Path(__file__).parent.parent / 'config.py'))
+config = importlib.util.module_from_spec(spec_config)
+spec_config.loader.exec_module(config)
+
+CONFIG = config.CONFIG
+
+from rich.console import Console
+console = Console(theme=CONFIG().severity_theme)
+
+# spec_ctraceback = importlib.util.spec_from_file_location("config", str(Path(__file__).parent.parent / 'custom_traceback.py'))
+# ctraceback = importlib.util.module_from_spec(spec_ctraceback)
+# spec_ctraceback.loader.exec_module(config)
+
+# CTraceback = ctraceback.CTraceback
 
 def send_log_to_rabbitmq(log_message):
     config = CONFIG()
@@ -57,8 +73,8 @@ def send_log_to_rabbitmq(log_message):
                     retry=True,
                     declare=[queue],
                 )
-    except:
-        CTraceback(*sys.exc_info())
+    except Exception:
+        console.print_exception()
 
 class RabbitMQHandler:
     def __init__(self, exchange_name='ctraceback', exchange_type=None, durable=True, username=None, password=None, host=None, port=None):
@@ -95,15 +111,15 @@ class RabbitMQHandler:
         ch.basic_ack(delivery_tag = met.delivery_tag)
 
     @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=4, max=10), stop=tenacity.stop_after_attempt(3), reraise=True)
-    def connect(self, verbose = False):
-        debug(self_username = self.username, debug = verbose)
-        debug(self_password = self.password, debug = verbose)
-        debug(self_host = self.host, debug = verbose)
-        debug(self_port = self.port, debug = verbose)
+    def connect(self, verbose = False, host = None, port = None, username = None, password = None):
+        debug(self_username = username or self.username, debug = verbose)
+        debug(self_password = password or self.password, debug = verbose)
+        debug(self_host = host or  self.host, debug = verbose)
+        debug(self_port = port or self.port, debug = verbose)
 
-        credentials = pika.PlainCredentials(self.username, self.password)
+        credentials = pika.PlainCredentials(username or self.username, password or self.password)
         debug(credentials = credentials, debug = verbose)
-        parameters = pika.ConnectionParameters(host=self.host, port=self.port, credentials=credentials)
+        parameters = pika.ConnectionParameters(host=host or self.host, port=int(port) if port else None or self.port, credentials=credentials)
         debug(parameters = parameters, debug = verbose)
         
         self.connection = pika.BlockingConnection(parameters)
@@ -123,23 +139,49 @@ class RabbitMQHandler:
     def send(self, body, verbose = False):
         self.connect(verbose)
         for key in self.routing_keys:
-            self.channel.basic_publish(exchange=self.exchange_name, routing_key=key, body=body.encode('utf-8') if not isinstance(body, bytes) else body)
+            self.channel.basic_publish(exchange=self.exchange_name, routing_key=key, body=body if isinstance(body, bytes) else body.encode('utf-8'))
             
     @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=4, max=10), stop=tenacity.stop_after_attempt(3), reraise=True)
-    def consume(self, call_back = None, last=True, verbose = False):
+    def consume(self, call_back = None, last=True, exchange_name = None, exchange_type = None, queue_name = None, routing_key = None, username = None, password = None, durable = False, ack = False, last_number = None, tag = None, host = None, port = None, verbose = False, rabbitmq_host = None, rabbitmq_port = None):
+        print(f"verbose: {verbose}")
+        if verbose:
+            debug(host = host, debug = 1)
+            debug(port = port, debug = 1)
+            debug(exchange_name = exchange_name, debug = 1)
+            debug(exchange_type = exchange_type, debug = 1)
+            debug(queue_name = queue_name, debug = 1)
+            debug(routing_key = routing_key, debug = 1)
+            debug(username = username, debug = 1)
+            debug(password = password, debug = 1)
+            debug(durable = durable, debug = 1)
+            debug(ack = ack, debug = 1)
+            debug(last = last, debug = 1)
+            debug(last_number = last_number, debug = 1)
+            debug(tag = tag, debug = 1)
+            debug(host = host, debug = 1)
+            debug(port = port, debug = 1)
+            debug(verbose = verbose, debug = 1)
+            debug(rabbitmq_host = rabbitmq_host, debug = 1)
+            debug(rabbitmq_port = rabbitmq_port, debug = 1)
+            
+        host = rabbitmq_host
+        port = rabbitmq_port
+        
+        if not isinstance(port, int) and port: port = int(port)
+            
         call_back = call_back or self.call_back
-        self.connect(verbose)
+        self.connect(verbose, host, port, username, password)
         if last:
-            queue = self.channel.queue_declare(queue=f'ctraceback_last_{self.config.RABBITMQ_MAX_LENGTH or 100}_queue', durable=True, arguments={'x-max-length': self.config.RABBITMQ_MAX_LENGTH or 100})
-            self.channel.queue_bind(exchange=self.exchange_name, queue=f'ctraceback_last_{self.config.RABBITMQ_MAX_LENGTH or 100}_queue', routing_key='ctraceback.100')
+            queue = self.channel.queue_declare(queue=f'ctraceback_last_{last_number or self.config.RABBITMQ_MAX_LENGTH or 100}_queue', durable=durable or True, arguments={'x-max-length': int(last_number) if last_number else None or self.config.RABBITMQ_MAX_LENGTH or 100})
+            self.channel.queue_bind(exchange=exchange_name or self.exchange_name, queue=f'ctraceback_last_{last_number or self.config.RABBITMQ_MAX_LENGTH or 100}_queue', routing_key=f'ctraceback.{last_number or self.config.RABBITMQ_MAX_LENGTH or 100}')
         
         else:
-            queue = self.channel.queue_declare(queue='ctraceback_queue', durable=self.durable)
-            self.channel.queue_bind(exchange=self.exchange_name, queue='ctraceback_queue', routing_key='ctraceback.error')
+            queue = self.channel.queue_declare(queue=queue_name or 'ctraceback_queue', durable=durable or self.durable)
+            self.channel.queue_bind(exchange=exchange_name or self.exchange_name, queue=queue_name or 'ctraceback_queue', routing_key=routing_key[0] if routing_key and isinstance(routing_key, list or tuple) else routing_key or 'ctraceback.error')
         
-        tag = self.config.RABBITMQ_CONSUMER_TAG[0] if isinstance(self.config.RABBITMQ_CONSUMER_TAG, list) else self.config.RABBITMQ_CONSUMER_TAG or 'all'
+        tag = tag or self.config.RABBITMQ_CONSUMER_TAG[0] if isinstance(self.config.RABBITMQ_CONSUMER_TAG, list) else self.config.RABBITMQ_CONSUMER_TAG or 'all'
         debug(tag = tag, debug = verbose)
-        self.channel.basic_consume(queue = queue.method.queue, consumer_callback = call_back, consumer_tag=tag, no_ack = self.config.RABBITMQ_ACK)
+        self.channel.basic_consume(queue = queue.method.queue, on_message_callback = call_back, consumer_tag=tag, auto_ack = ack or self.config.RABBITMQ_ACK)
         #channel.basic_recover(requeue = True)
         try:
             while 1:
@@ -149,20 +191,18 @@ class RabbitMQHandler:
                 except KeyboardInterrupt:
                     print("exit ...")
                     break
-                except:
-                    CTraceback(*sys.exc_info())
+                except Exception:
+                    console.print_exception()
         except KeyboardInterrupt:
             print("exit ...")
         except:
-            CTraceback(*sys.exc_info())        
+            console.print_exception()  
 
         self.close()
 
     def close(self):
-        try:
+        with contextlib.suppress(Exception):
             self.connection.close()
-        except Exception:
-            pass
 
 class RabbitMQHandler2():
     def __init__(self, host = '127.0.0.1', port = 5672, username = 'guest', password = 'guest', exchange = 'ctraceback', routing_key = '', max_retries=3, durable = True, exchange_type = 'fanout', delivery_mode = 2):

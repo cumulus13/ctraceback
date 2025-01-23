@@ -11,18 +11,18 @@ import time
 from pydebugger.debug import debug
 try:
     from . custom_traceback import console
-except:
+except Exception:
     from custom_traceback import console
 
 try:
     from . config import CONFIG
-except:
+except Exception:
     from config import CONFIG
 
 if sys.platform == 'win32':
     try:
         from . import on_top
-    except:
+    except Exception:
         import on_top
 
 config = CONFIG()
@@ -60,13 +60,37 @@ def print_traceback(exc_type, exc_value, tb_details):
 
 def call_back_rabbitmq(ch, met, prop, body):
     debug(body = body, debug = config.VERBOSE)
-    exc_type, exc_value, tb_details = pickle.loads(body)
-    # Print the traceback
-    print_traceback(exc_type, exc_value, tb_details)
+    try:
+        exc_type, exc_value, tb_details = pickle.loads(body)
+        # Print the traceback
+        print_traceback(exc_type, exc_value, tb_details)
+    except Exception:
+        print(body.decode() if hasattr(body, 'decode') else body)
     ch.basic_ack(delivery_tag = met.delivery_tag)
     
-# Server to listen for traceback data
-def start_server(host = None, port = None, handle = 'socket'):
+# Server to listen for traceback data    
+def _start_server(host = None, port = None, handle = 'socket', exchange_name = None, exchange_type = None, queue_name = None, routing_key = None, username = None, password = None, durable = False, ack = False, last = None, last_number = None, tag = None, rabbitmq_host = None, rabbitmq_port = None, verbose = False):
+    # print(f"verbose: {verbose}")
+    if verbose:
+        debug(host = host, debug = 1)
+        debug(port = port, debug = 1)
+        debug(handle = handle, debug = 1)
+        debug(exchange_name = exchange_name, debug = 1)
+        debug(exchange_type = exchange_type, debug = 1)
+        debug(queue_name = queue_name, debug = 1)
+        debug(routing_key = routing_key, debug = 1)
+        debug(username = username, debug = 1)
+        debug(password = password, debug = 1)
+        debug(durable = durable, debug = 1)
+        debug(ack = ack, debug = 1)
+        debug(last = last, debug = 1)
+        debug(last_number = last_number, debug = 1)
+        debug(tag = tag, debug = 1)
+        debug(rabbitmq_host = rabbitmq_host, debug = 1)
+        debug(rabbitmq_port = rabbitmq_port, debug = 1)
+        debug(verbose = verbose, debug = 1)
+        
+        
     if not handle or handle == 'socket':
         global server_socket
 
@@ -75,7 +99,7 @@ def start_server(host = None, port = None, handle = 'socket'):
                 console.print(f"[bold #FFAA00]Server is listening on[/] [bold #00FFFF]{host or HOST}[/]:[bold #FF55FF]{port or PORT}[/]")
 
                 server_socket = server
-                server.bind((host or HOST, int(port or PORT)))
+                server.bind((host or HOST or '127.0.0.1', int(port or PORT) if port or PORT else 7000 ))
                 server.listen()
 
                 while True:
@@ -99,6 +123,7 @@ def start_server(host = None, port = None, handle = 'socket'):
                         # Print the traceback
                     print_traceback(exc_type, exc_value, tb_details)
         except KeyboardInterrupt:
+            os.kill(os.getpid(), signal.SIGTERM)
             server_socket.close()
             sys.exit()
             
@@ -111,16 +136,43 @@ def start_server(host = None, port = None, handle = 'socket'):
         except Exception:
             from handler import rabbitmq
             
-        console.print(f"[notice]Run with[/] [error]RabbitMQ \[{handle}][/] [notice]handler ![/] [warning]{config.RABBITMQ_HOST}[/]:[debug]{config.RABBITMQ_PORT}[/]/[critical]{config.RABBITMQ_EXCHANGE_NAME or 'ctraceback'}[/]")
+        console.print(f"[notice]Run with[/] [error]RabbitMQ \[{handle}][/] [notice]handler ![/] [warning]{config.RABBITMQ_HOST}[/]:[debug]{config.RABBITMQ_PORT}[/]/[critical]{exchange_name or config.RABBITMQ_EXCHANGE_NAME or 'ctraceback'}[/]")
         while 1:
             try:
-                handler = rabbitmq.RabbitMQHandler().consume(call_back_rabbitmq, verbose = config.VERBOSE)
+                # def consume(self, 
+                #             call_back = None, 
+                #             last=True, 
+                #             exchange_name = None, 
+                #             exchange_type = None, 
+                #             queue_name = None, 
+                #             routing_key = None, 
+                #             username = None, 
+                #             password = None, 
+                #             durable = False, 
+                #             ack = False, 
+                #             last_number = None, 
+                #             tag = None, 
+                #             host = None, 
+                #             port = None, 
+                #             verbose = False, 
+                #             rabbitmq_host = None, 
+                #             rabbitmq_port = None):
+                rabbitmq.RabbitMQHandler().consume(call_back_rabbitmq, last, exchange_name, exchange_type, queue_name, routing_key, username, password, durable, ack, last_number, tag, host, port, verbose or config.VERBOSE, rabbitmq_host or host, rabbitmq_port or port)
+                break
             except Exception:
                 console.print("[error] connection error, re-connection ...[/]")
+                if verbose or os.getenv('verbose') in ["1", "True", "TRUE"]:
+                    console.print_exception()
                 time.sleep(int(config.SLEEP) if config.SLEEP else 1)
     else:
         console.print(f"[error]there is not handle support for '{handle}' ![/]")
         os.kill(os.getpid(), signal.SIGTERM)
+
+def start_server(host = None, port = None, handle = 'socket', exchange_name = None, exchange_type = None, queue_name = None, routing_key = None, username = None, password = None, durable = False, ack = False, last = None, last_number = None, tag = None, rabbitmq_host = None, rabbitmq_port = None, verbose = False):
+    if isinstance(handle, list or tuple):
+        for hand in handle:
+            _start_server(host, port, hand, exchange_name, exchange_type, queue_name, routing_key, username, password, durable, ack, last, last_number, tag, rabbitmq_host, rabbitmq_port, verbose)
+        
 
 def handle_exit_signal(signum, frame):
     """Handle termination signals."""

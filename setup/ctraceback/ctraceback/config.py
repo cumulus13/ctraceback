@@ -3,11 +3,38 @@ from configset import configset
 import json
 from pydebugger.debug import debug
 import os
+from rich.theme import Theme
+from rich.console import Console
 
 class CONFIG:
     _config_file = Path.cwd() / 'traceback.json' if (Path.cwd() / 'traceback.json').is_file() else '' or Path(__file__).parent / "traceback.json"
     _config_ini_file = str(Path.cwd() / 'traceback.ini') if (Path.cwd() / 'traceback.ini').is_file() else "" or str(Path(__file__).parent / "traceback.ini")
     config = configset(_config_ini_file)
+    
+    severity_theme = Theme({
+        "emergency": "#FFFFFF on #ff00ff",
+        "emerg": "#FFFFFF on #ff00ff",
+        "alert": "white on #005500",
+        "ale": "white on #005500",
+        "aler": "white on #005500",
+        'critical': "white on #0000FF",
+        'criti': "white on #0000FF",
+        'crit': "white on #0000FF",
+        "error": "white on red",
+        "err": "white on red",
+        "warning": "black on #FFFF00",
+        "warni": "black on #FFFF00",
+        "warn": "black on #FFFF00",
+        'notice': "black on #55FFFF",
+        'notic': "black on #55FFFF",
+        'noti': "black on #55FFFF",
+        "info": "bold #AAFF00",
+        "debug": "black on #FFAA00",
+        "deb": "black on #FFAA00",
+        "unknown": "white on #FF00FF"
+    })
+    
+    console = Console(theme = severity_theme)
 
     _data = {
         # Remote Syslog configuration
@@ -73,7 +100,18 @@ class CONFIG:
     @classmethod
     def get_config(cls, section, option):
         return cls.config.get_config(section, option)
+    
+    @classmethod
+    def write_config(cls, section, option):
+        return cls.config.write_config(section, option)
 
+    @classmethod
+    def set(cls, key, value):
+        key = str(key).upper()  
+        cls.console.print(f"[bold #FFFF00]Write/Set config[/] [bold #00FFFF]{key}[/] [bold #FFAAFF]-->[/] [bold ##00AAFF]{value if value else ''}[/]")
+        if str(value).isdigit(): value = int(value)
+        return CONFIG().__setattr__(key, value)
+    
     def __setattr__(self, name, value):
         if name in {"_config_file", "_data"}:  # Allow setting internal attributes
             super().__setattr__(name, value)

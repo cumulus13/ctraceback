@@ -142,7 +142,8 @@ class RabbitMQHandler:
             self.channel.basic_publish(exchange=self.exchange_name, routing_key=key, body=body if isinstance(body, bytes) else body.encode('utf-8'))
             
     @tenacity.retry(wait=tenacity.wait_exponential(multiplier=1, min=4, max=10), stop=tenacity.stop_after_attempt(3), reraise=True)
-    def consume(self, call_back = None, last=True, exchange_name = None, exchange_type = None, queue_name = None, routing_key = None, username = None, password = None, durable = False, ack = False, last_number = None, tag = None, host = None, port = None, verbose = False):
+    def consume(self, call_back = None, last=True, exchange_name = None, exchange_type = None, queue_name = None, routing_key = None, username = None, password = None, durable = False, ack = False, last_number = None, tag = None, host = None, port = None, verbose = False, rabbitmq_host = None, rabbitmq_port = None):
+        print(f"verbose: {verbose}")
         if verbose:
             debug(host = host, debug = 1)
             debug(port = port, debug = 1)
@@ -156,9 +157,17 @@ class RabbitMQHandler:
             debug(ack = ack, debug = 1)
             debug(last = last, debug = 1)
             debug(last_number = last_number, debug = 1)
+            debug(tag = tag, debug = 1)
             debug(host = host, debug = 1)
             debug(port = port, debug = 1)
             debug(verbose = verbose, debug = 1)
+            debug(rabbitmq_host = rabbitmq_host, debug = 1)
+            debug(rabbitmq_port = rabbitmq_port, debug = 1)
+            
+        host = rabbitmq_host
+        port = rabbitmq_port
+        
+        if not isinstance(port, int) and port: port = int(port)
             
         call_back = call_back or self.call_back
         self.connect(verbose, host, port, username, password)
