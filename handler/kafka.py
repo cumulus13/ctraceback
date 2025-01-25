@@ -1,8 +1,27 @@
+from __future__ import absolute_import, unicode_literals
+
 from kafka import KafkaProducer, KafkaConsumer
+import contextlib
+from pathlib import Path
+from rich.text import Text
+from rich import traceback as rich_traceback
+import shutil
+rich_traceback.install(width=shutil.get_terminal_size()[0], theme='fruity')
 import json
-import os
-from datetime import datetime
 import tenacity
+import os
+from pydebugger.debug import debug
+from datetime import datetime
+import importlib
+
+spec_config = importlib.util.spec_from_file_location("config", str(Path(__file__).parent.parent / 'config.py'))
+config = importlib.util.module_from_spec(spec_config)
+spec_config.loader.exec_module(config)
+
+CONFIG = config.CONFIG
+
+from rich.console import Console
+console = Console(theme=CONFIG().severity_theme)
 
 class KafkaHandler:
     def __init__(self, topic_name='ctraceback', bootstrap_servers=None, group_id=None, auto_offset_reset='earliest'):

@@ -52,6 +52,7 @@ class CONFIG:
         'ACCEPTS' : config.get_config_as_list('on_top', 'accepts') or ['WindowsTerminal.exe', 'cmd.exe', 'python.exe'],
         'ON_TOP' : int(config.get_config('on_top', 'active') or '0') or False,
         'SLEEP' : int(config.get_config('on_top', 'sleep') or '0') or 1,   
+        
         'USE_SQL' : int(config.get_config('db', 'active') or '0') or False, 
         'DB_TYPE' : config.get_config('db', 'type') or '', 
         'DB_NAME' : config.get_config('db', 'name') or 'ctraceback',
@@ -63,7 +64,8 @@ class CONFIG:
         'TO_SYSLOG' : config.get_config('syslog', 'active') or False, 
         'TO_FILE' : config.get_config('file', 'active') or False, 
         'TO_DB' : config.get_config('db', 'active') or False, 
-        'USE_RABBITMQ' : config.get_config('rabbitmq', 'active') or os.getenv('CTRACEBACK_RABBITMQ') in ['1', 'true', 'True', 'TRUE'] or True, 
+        
+        'USE_RABBITMQ' : config.get_config('rabbitmq', 'active') or os.getenv('CTRACEBACK_RABBITMQ') in ['1', 'true', 'True', 'TRUE'] or False, 
         'RABBITMQ_HOST' : config.get_config('rabbitmq', 'host') or '127.0.0.1', 
         'RABBITMQ_PORT' : config.get_config('rabbitmq', 'port') or 5672, 
         'RABBITMQ_USERNAME' : config.get_config('rabbitmq', 'username') or 'guest', 
@@ -75,6 +77,29 @@ class CONFIG:
         'RABBITMQ_ACK' : config.get_config('rabbitmq', 'ack') or False, 
         'RABBITMQ_ROUTING_KEY' : config.get_config_as_list('rabbitmq', 'routing_key') if config.get_config('rabbitmq', 'routing_key') else [] or ['ctraceback.error', 'ctraceback.100'], 
         'RABBITMQ_CONSUMER_TAG' : config.get_config_as_list('rabbitmq', 'consumer_tag') if config.get_config('rabbitmq', 'consumer_tag') else '' or 'all', 
+        
+        'USE_KAFKA' : config.get_config('kafka', 'active') or os.getenv('CTRACEBACK_KAFKA') in ['1', 'true', 'True', 'TRUE'] or False, 
+        'KAFKA_BOOTSTRAP_SERVER' : config.get_config('kafka', 'host') or '127.0.0.1', 
+        'KAFKA_PORT' : config.get_config('kafka', 'port') or 5672, 
+        'KAFKA_USERNAME' : config.get_config('kafka', 'username') or 'guest', 
+        'KAFKA_PASSWORD' : config.get_config('kafka', 'password') or 'guest', 
+        'KAFKA_TOPIC_NAME' : config.get_config('kafka', 'topic') or 'log', 
+        'KAFKA_GROUP_ID' : config.get_config('kafka', 'group') or 'ctraceback', 
+        'KAFKA_MAX_LENGTH' : config.get_config('kafka', 'max_length') or 100, 
+        
+        'USE_PULSAR' : config.get_config('pulsar', 'active') or os.getenv('CTRACEBACK_PULSAR') in ['1', 'true', 'True', 'TRUE'] or False, 
+        'PULSAR_HOST' : config.get_config('pulsar', 'host') or '192.168.100.1', 
+        'PULSAR_PORT' : config.get_config('pulsar', 'port') or 6650, 
+        'PULSAR_USERNAME' : config.get_config('pulsar', 'username') or 'pulsar', 
+        'PULSAR_PASSWORD' : config.get_config('pulsar', 'password') or 'pulsar', 
+        'PULSAR_TENANT' : config.get_config('pulsar', 'tenant') or 'ctraceback_tenant',
+        'PULSAR_NAMESPACE' : config.get_config('pulsar', 'namespace') or 'ctraceback_namespace',  
+        'PULSAR_TOPIC' : config.get_config('pulsar', 'topic') or 'ctraceback_topic', 
+        'PULSAR_SUB' : config.get_config('pulsar', 'sub') or 'ctraceback_sub', 
+        'PULSAR_MAX_LENGTH' : config.get_config('pulsar', 'max_length') or 100, 
+        'PULSAR_AUTH_TOKEN': config.get_config('pulsar', 'token') or '', 
+        'PULSAR_VERBOSE': config.get_config('pulsar', 'verbose') or '', 
+        
     }
 
     debug(_data = _data)

@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 import contextlib
-import sys
-from configset import configset
 from pathlib import Path
 from rich.text import Text
 from rich import traceback as rich_traceback
